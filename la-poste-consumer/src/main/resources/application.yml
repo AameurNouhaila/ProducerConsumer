@@ -1,0 +1,35 @@
+spring:
+  profiles:
+    active: local
+server:
+  port: 8081
+
+---
+spring:
+  profiles: local
+  kafka:
+    consumer:
+      bootstrap-servers: localhost:9092
+      key-deserializer: org.apache.kafka.common.serialization.IntegerDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: groupId
+
+---
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/mydatabase
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5Dialect
+        show_sql: true
+        use_sql_comments: true
+        format_sql: true
+  main:
+    allow-circular-references: true
+
