@@ -1,5 +1,6 @@
-package com.projectkafka.entity;
+package com.projectkafka.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -22,6 +23,7 @@ public class Client {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date dateNaissance;
     private String adresse;
+    @JsonManagedReference
     @OneToMany(mappedBy = "client", cascade = {CascadeType.ALL})
     @ToString.Exclude
     private List<Evenement> evenements;
