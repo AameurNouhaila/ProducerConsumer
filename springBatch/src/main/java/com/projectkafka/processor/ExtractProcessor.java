@@ -6,13 +6,13 @@ import org.springframework.batch.item.ItemProcessor;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Map;
 
-public class ExtractProcessor implements ItemProcessor<Evenement,Evenement> {
+public class ExtractProcessor implements ItemProcessor<Map<String, Object>, Map<String, Object>>  {
 
     @Override
-    public Evenement process(Evenement evenement) {
-        evenement.setExtract(true);
-
-        return evenement;
+    public Map<String, Object> process(Map<String, Object> item) throws Exception {
+        item.put("extract", true); // Mettre à jour la valeur de l'attribut 'extract' à true
+        return item;
     }
 }
