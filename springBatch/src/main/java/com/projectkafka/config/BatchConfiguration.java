@@ -3,6 +3,7 @@ package com.projectkafka.config;
 import com.projectkafka.entities.Client;
 import com.projectkafka.entities.Evenement;
 import com.projectkafka.processor.ExtractProcessor;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersIncrementer;
 import org.springframework.batch.core.Step;
@@ -11,6 +12,8 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
@@ -39,6 +42,8 @@ public class BatchConfiguration {
     private JobBuilderFactory jobBuilderFactory;
     @Autowired
     DataSource dataSource;
+    @Autowired
+    private RestHighLevelClient elasticsearchClient;
     @Bean
     public JdbcCursorItemReader<Map<String, Object>> reader() {
         JdbcCursorItemReader<Map<String, Object>> reader = new JdbcCursorItemReader<>();
@@ -53,44 +58,40 @@ public class BatchConfiguration {
                 "LEFT JOIN pli ON evenement.id = pli.evenement_id " +
                 "LEFT JOIN offre ON pli.offre_id = offre.id " +
                 "LEFT JOIN partenaire ON offre.partenaire_id = partenaire.id " +
-                "WHERE client.id = 1");
+                "WHERE evenement.extract = false"
+                );
         reader.setRowMapper(new ColumnMapRowMapper());
         return reader;
     }
 
     @Bean
-    public FlatFileItemWriter<Map<String, Object>> writer() {
-        FlatFileItemWriter<Map<String, Object>> writer = new FlatFileItemWriter<>();
-        writer.setResource(new FileSystemResource("C:/nouhaBatch/nouha.csv"));
-        writer.setLineAggregator(new DelimitedLineAggregator<Map<String, Object>>() {
-            {
-                setDelimiter(",");
-                setFieldExtractor(new PassThroughFieldExtractor<>());
-            }
-        });
-        return writer;
+    public ItemWriter<Map<String, Object>> elasticsearchItemWriter() {
+        String index = "la-poste";
+        return new ElasticsearchItemWriter(elasticsearchClient, index);
+
     }
 
-@Bean
-public Step executeStep() {
-    return stepBuilderFactory.get("executeStep")
-            .<Map<String, Object>, Map<String, Object>>chunk(10)
-            .reader(reader())
-            .processor(extractProcessor())
-            .writer(writer())
-            .build();
-}
+
+    @Bean
+    public Step executeStep(ItemReader<Map<String, Object>> reader,
+                            ItemWriter<Map<String, Object>> elasticsearchItemWriter) {
+        return stepBuilderFactory.get("executeStep")
+                .<Map<String, Object>, Map<String, Object>>chunk(10)
+                .reader(reader())
+                .processor(extractProcessor())
+                .writer(elasticsearchItemWriter)
+                .build();
+    }
     @Bean
     public ItemProcessor<Map<String, Object>, Map<String, Object>> extractProcessor() {
-        return new ExtractProcessor();
+        return new ExtractProcessor(dataSource);
     }
 
     @Bean
-    public Job processJob() {
+    public Job processJob(Step executeStep) {
         return jobBuilderFactory.get("processJob")
                 .incrementer(new RunIdIncrementer())
-                .flow(executeStep())
-                .end()
+                .start(executeStep)
                 .build();
     }
 
