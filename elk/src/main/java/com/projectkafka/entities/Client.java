@@ -1,13 +1,11 @@
 package com.projectkafka.entities;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,13 +18,13 @@ public class Client {
     private String nom;
     private String prenom;
     private String cin;
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private List<Integer> date_naissance;
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    private LocalDateTime date_naissance;
     private String adresse;
 
     private String evenement_id;
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private List<Integer> date_event;
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    private LocalDateTime date_event;
     private Boolean extract;
 
     private String pli_id;
