@@ -3,10 +3,15 @@ package com.projectkafka.config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.batch.item.ItemWriter;
 
@@ -24,6 +29,7 @@ public class ElasticsearchItemWriter implements ItemWriter<Map<String, Object>> 
     private ObjectMapper objectMapper;
     private SimpleDateFormat dateFormat;
 
+
     public ElasticsearchItemWriter(RestHighLevelClient client, String index) {
         this.client = client;
         this.index = index;
@@ -35,20 +41,60 @@ public class ElasticsearchItemWriter implements ItemWriter<Map<String, Object>> 
         // Initialiser l'objectMapper avec le module Jackson JSR310
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+        //deleteIndex();
+        //createIndex();
+    }
+    private void deleteIndex() {
+        DeleteIndexRequest request = new DeleteIndexRequest(index);
+        try {
+            AcknowledgedResponse response = client.indices().delete(request, RequestOptions.DEFAULT);
+            if (response.isAcknowledged()) {
+                System.out.println("Index deleted successfully.");
+            } else {
+                System.out.println("Failed to delete index.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createIndex() {
+        CreateIndexRequest request = new CreateIndexRequest(index)
+        .mapping("{\n" +
+                "  \"properties\": {\n" +
+                "    \"date_naissance\": {\n" +
+                "      \"type\": \"date\"\n" +
+                "    }\n" +
+                "  }\n" +
+                "}", XContentType.JSON);
+        try {
+            CreateIndexResponse response = client.indices().create(request, RequestOptions.DEFAULT);
+            if (response.isAcknowledged()) {
+                System.out.println("Index created successfully.");
+            } else {
+                System.out.println("Failed to create index.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void write(List<? extends Map<String, Object>> items) throws Exception {
+        if (!indexExists()) {
+            createIndex(); // Create the index if it doesn't exist
+        }
         for (Map<String, Object> item : items) {
             // Convertir la Map en JSON
-            String json = convertMapToJson(item);
+
 
             // Mettre à jour la date en chaîne formatée
             convertDateToString(item, "date-naissance");
 
             // Créer une requête d'indexation
-            IndexRequest request = new IndexRequest(index)
-                    .source(json, XContentType.JSON);
+            IndexRequest request = new IndexRequest(index, "_doc")
+                    .source(item, XContentType.JSON);
+
 
             try {
                 // Indexation du document dans Elasticsearch
@@ -72,15 +118,15 @@ public class ElasticsearchItemWriter implements ItemWriter<Map<String, Object>> 
         }
     }
 
-    private String convertMapToJson(Map<String, Object> map) {
+    private boolean indexExists() {
         try {
-            // Convertir la Map en JSON en utilisant l'objectMapper configuré avec le module Jackson JSR310
-            return objectMapper.writeValueAsString(map);
-        } catch (JsonProcessingException e) {
-            // Gérer les erreurs de sérialisation JSON
+            return client.indices().exists(new GetIndexRequest(index), RequestOptions.DEFAULT);
+        } catch (IOException e) {
             e.printStackTrace();
-            return null;
+            return false;
         }
     }
+
+
 }
 
