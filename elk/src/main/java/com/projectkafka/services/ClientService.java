@@ -2,15 +2,13 @@ package com.projectkafka.services;
 
 import com.projectkafka.entities.Client;
 import com.projectkafka.repositories.ClientRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -23,9 +21,16 @@ public class ClientService {
         this.conversionService = conversionService;
     }
 
-    public Page<Client> getAllClients() {
-        return clientRepository.findAll(PageRequest.of(0, 27));
+    public Page<Client> chercher(String search, PageRequest pageRequest) {
+        return clientRepository.chercher(search, pageRequest);
     }
 
+    public Page<Client> chercherParDate(LocalDateTime dateDebut, LocalDateTime dateFin, PageRequest pageRequest) {
+        return clientRepository.chercherParDate(dateDebut, dateFin, pageRequest);
+    }
+
+    public Page<Client> listAll(){
+        return (Page<Client>) clientRepository.findAll();
+    }
 
 }
