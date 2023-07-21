@@ -15,6 +15,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtils {
     private String SECRET_KEY = "secret";
+    private long allowedClockSkewMillis = 60000;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -33,9 +34,10 @@ public class JwtUtils {
     }
 
     private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        Date expiration = extractExpiration(token);
+        Date now = new Date();
+        return expiration.before(new Date(now.getTime() + allowedClockSkewMillis));
     }
-
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, userDetails);

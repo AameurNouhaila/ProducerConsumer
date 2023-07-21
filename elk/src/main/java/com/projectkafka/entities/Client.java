@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 @Builder
 @Document(indexName = "la-poste")
 public class Client {
+
     @Id
     private String _id;
     private String client_id;

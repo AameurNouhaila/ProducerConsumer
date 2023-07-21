@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface ClientRepository extends ElasticsearchRepository<Client, Integer> {
+public interface ClientRepository extends ElasticsearchRepository<Client, String> {
 
     @Query("{\"bool\": {\"must\": [{\"match\": {\"niveau_recommandation\": \"?0\"}}]}}")
     public Page<Client> chercher(
@@ -19,5 +19,6 @@ public interface ClientRepository extends ElasticsearchRepository<Client, Intege
     @Query("{\"bool\": {\"must\": [{\"range\": {\"date_event\": {\"gte\": \"?0\", \"lte\": \"?1\"}}}]}}")
     public Page<Client> chercherParDate(
             @Param("dateDebut") LocalDateTime dateDebut, @Param("dateFin") LocalDateTime dateFin, Pageable pageable);
+
 
 }

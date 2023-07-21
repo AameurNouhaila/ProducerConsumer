@@ -15,23 +15,20 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.catalina.filters.ExpiresFilter;
+import org.elasticsearch.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import javax.servlet.http.HttpServletResponse;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 @RestController
 @RequestMapping("/la-poste")
 public class ClientController {
@@ -39,6 +36,12 @@ public class ClientController {
 
     public ClientController(ClientService clientService) {
         this.clientService = clientService;
+    }
+
+    @GetMapping("/clients/list")
+    public ResponseEntity<List<Client>> getAllClientsList() {
+        List<Client> clientsList = clientService.listAll().getContent();
+        return ResponseEntity.ok(clientsList);
     }
 
     @GetMapping("/clients")
@@ -110,6 +113,24 @@ public class ClientController {
         return ResponseEntity.ok().headers(headers).body(documentContent);
     }
 
+    @DeleteMapping("/clients/{_id}")
+    public ResponseEntity<String> supprimerClientParId(@PathVariable String _id) {
+        // Utilisation de la méthode supprimerClientParId du service
+        clientService.supprimerClientParId(_id);
+
+        return new ResponseEntity<>("Le client a été supprimé avec succès.", HttpStatus.OK);
+    }
+
+    @GetMapping("/clients/findById/{_id}")
+    public ResponseEntity<Client> getClientById(@PathVariable String _id) {
+        // Utilisation de la méthode getClientById du service
+        Client client = clientService.getClientById(_id);
+        if (client != null) {
+            return ResponseEntity.ok(client);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
 
 }

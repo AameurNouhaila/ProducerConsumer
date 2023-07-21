@@ -33,4 +33,15 @@ public class ClientService {
         return (Page<Client>) clientRepository.findAll();
     }
 
+    public void supprimerClientParId(String _id) {
+        // Logique pour supprimer le client par son ID en utilisant le clientRepository
+        clientRepository.deleteById(_id);
+    }
+
+    public Client getClientById(String _id) {
+        // Logique pour obtenir le client par son ID en utilisant le clientRepository
+        return clientRepository.findById(_id).orElse(null);
+    }
+
+
 }
