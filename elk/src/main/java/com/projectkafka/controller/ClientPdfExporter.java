@@ -20,6 +20,8 @@ import com.projectkafka.entities.Client;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +29,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,10 +71,10 @@ public class ClientPdfExporter {
                 .setTextAlignment(TextAlignment.RIGHT);
         nestedTable.addCell(new Cell().add("962922952").setBorder(Border.NO_BORDER))
                 .setTextAlignment(TextAlignment.RIGHT);
-        nestedTable.addCell(new Cell().add("Date :").setBorder(Border.NO_BORDER))
-                .setTextAlignment(TextAlignment.RIGHT);
-        nestedTable.addCell(new Cell().add("12-05-2023").setBorder(Border.NO_BORDER))
-                .setTextAlignment(TextAlignment.RIGHT);
+        LocalDate currentDate = LocalDate.now();
+        String formattedDate = currentDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        nestedTable.addCell(new Cell().add("Date :").setBorder(Border.NO_BORDER)).setTextAlignment(TextAlignment.RIGHT);
+        nestedTable.addCell(new Cell().add(formattedDate).setBorder(Border.NO_BORDER)).setTextAlignment(TextAlignment.RIGHT);
 
         table.addCell(new Cell().add(nestedTable));
 
@@ -102,15 +106,19 @@ public class ClientPdfExporter {
 
 
 
-        clientInfoTable.addCell(new Cell().add("Adresse :").setBorder(Border.NO_BORDER));
-        clientInfoTable.addCell(new Cell().add("LAPOSTE-9 rue u Colonel Pierre Avia ").setBorder(Border.NO_BORDER));
-        clientInfoTable.addCell(new Cell().add("Ville :").setBorder(Border.NO_BORDER));
-        clientInfoTable.addCell(new Cell().add("Paris , France").setBorder(Border.NO_BORDER));
+        if (!listClients.isEmpty()) {
+            Client firstClient = listClients.get(0); // Fetch the first client
 
-        clientInfoTable.addCell(new Cell().add("Code postal :").setBorder(Border.NO_BORDER));
-        clientInfoTable.addCell(new Cell().add("17507").setBorder(Border.NO_BORDER));
-        clientInfoTable.addCell(new Cell().add("Téléphone :").setBorder(Border.NO_BORDER));
-        clientInfoTable.addCell(new Cell().add("09 96 399 111").setBorder(Border.NO_BORDER));
+            clientInfoTable.addCell(new Cell().add("Partenaire :").setBorder(Border.NO_BORDER));
+            clientInfoTable.addCell(new Cell().add(firstClient.getPartenaire_nom()).setBorder(Border.NO_BORDER));
+            clientInfoTable.addCell(new Cell().add("Adresse :").setBorder(Border.NO_BORDER));
+            clientInfoTable.addCell(new Cell().add("Paris , France").setBorder(Border.NO_BORDER));
+
+            clientInfoTable.addCell(new Cell().add("Code postal :").setBorder(Border.NO_BORDER));
+            clientInfoTable.addCell(new Cell().add("17507").setBorder(Border.NO_BORDER));
+            clientInfoTable.addCell(new Cell().add("Téléphone :").setBorder(Border.NO_BORDER));
+            clientInfoTable.addCell(new Cell().add("09 96 399 111").setBorder(Border.NO_BORDER));
+        }
 
         document.add(clientInfoTable);
 
@@ -182,17 +190,13 @@ public class ClientPdfExporter {
         for (String tnc : TncList) {
             tb.addCell(new Cell().add(tnc).setBorder(Border.NO_BORDER));
         }
+
+
         document.add(tb);
         document.close();
 
         return outputStream.toByteArray();
     }
 
-    public ResponseEntity<byte[]> downloadDocument() throws Exception {
-        byte[] pdfBytes = export();
-        System.out.println("The document is downloaded successfully!");
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"facture.pdf\"")
-                .body(pdfBytes);
-    }
+
 }

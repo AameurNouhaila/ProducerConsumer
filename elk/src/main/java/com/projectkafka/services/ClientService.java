@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -42,6 +43,7 @@ public class ClientService {
         // Logique pour obtenir le client par son ID en utilisant le clientRepository
         return clientRepository.findById(_id).orElse(null);
     }
+
 
 
 }

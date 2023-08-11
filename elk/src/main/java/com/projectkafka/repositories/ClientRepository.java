@@ -7,6 +7,7 @@ import org.springframework.data.elasticsearch.annotations.Query;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,6 +20,8 @@ public interface ClientRepository extends ElasticsearchRepository<Client, String
     @Query("{\"bool\": {\"must\": [{\"range\": {\"date_event\": {\"gte\": \"?0\", \"lte\": \"?1\"}}}]}}")
     public Page<Client> chercherParDate(
             @Param("dateDebut") LocalDateTime dateDebut, @Param("dateFin") LocalDateTime dateFin, Pageable pageable);
+
+
 
 
 }

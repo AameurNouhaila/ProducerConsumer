@@ -8,12 +8,15 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.projectkafka.entities.Client;
 import com.projectkafka.services.ClientService;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -70,48 +73,140 @@ public class ClientController {
         return ResponseEntity.ok(clients);
     }
 
+/*
+   @GetMapping("/clients/pdf")
+    public void generatePdf(HttpServletResponse response,
+                            @RequestParam(name = "page", defaultValue = "0") int page,
+                            @RequestParam(name = "size", defaultValue = "2") int size,
+                            @RequestParam(name = "dateDebut") String dateDebut,
+                            @RequestParam(name = "dateFin") String dateFin) throws IOException {
+
+        // Set response headers
+        response.setContentType("application/pdf");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=facture.pdf";
+        response.setHeader(headerKey, headerValue);
+
+        // Generate the PDF content using the provided dates
+        byte[] pdfBytes = exportToPdf(page, size, dateDebut, dateFin);
+
+        // Write the PDF content to the response's output stream
+        response.getOutputStream().write(pdfBytes);
+    }
+
+
+
+    @GetMapping("/clients/download")
+    public ResponseEntity<byte[]> downloadPdf(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "2") int size,
+            @RequestParam(name = "dateDebut") String dateDebut,
+            @RequestParam(name = "dateFin") String dateFin) throws Exception {
+
+        // Generate the PDF content using the provided dates
+        byte[] pdfBytes = exportToPdf(page, size, dateDebut, dateFin);
+
+        // Set response headers for download
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "facture.pdf");
+
+        // Return the response with the PDF content
+        return ResponseEntity.ok().headers(headers).body(pdfBytes);
+    }
+
+    private byte[] exportToPdf(int page, int size, String dateDebut, String dateFin) throws IOException {
+        // Parse the date strings into LocalDateTime objects using ISO 8601 format
+        DateTimeFormatter isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        LocalDateTime parsedDateDebut = LocalDateTime.parse(dateDebut, isoFormatter);
+        LocalDateTime parsedDateFin = LocalDateTime.parse(dateFin, isoFormatter);
+
+        // Convert LocalDateTime to LocalDate and add time for start and end of the day
+        LocalDate startDate = parsedDateDebut.toLocalDate();
+        LocalDate endDate = parsedDateFin.toLocalDate();
+
+        LocalDateTime startOfDay = startDate.atStartOfDay();
+        LocalDateTime endOfDay = endDate.atTime(23, 59, 59);
+
+
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Client> clients = clientService.chercherParDate(startOfDay, endOfDay, pageRequest);
+        List<Client> listClients = clients.getContent();
+
+        ClientPdfExporter exporter = new ClientPdfExporter(listClients);
+
+        // Export PDF and return the byte array
+        return exporter.export();
+    }*/
+
+
+
 
     @GetMapping("/clients/pdf")
-    public void exportToPdf(HttpServletResponse response) throws IOException {
+    public void exportToPdf(HttpServletResponse response,
+                            @RequestParam(name = "page", defaultValue = "0") int page,
+                            @RequestParam(name = "size", defaultValue = "10") int size,
+                            @RequestParam(name = "dateDebut") String dateDebut,
+                            @RequestParam(name = "dateFin") String dateFin) throws IOException {
+
         response.setContentType("application/pdf");
 
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String currentDateTime = dateFormat.format(new Date());
 
         String headerKey = "Content-disposition";
         String headerValue = "attachment; filename=facture.pdf";
 
-        response.setHeader(headerKey, headerValue);
 
-        Page<Client> clientsPage = clientService.listAll();
-        List<Client> listClients = clientsPage.getContent(); // Obtenir la liste de clients à partir de la page
+
+        // Parse the date strings into LocalDateTime objects using ISO 8601 format
+        DateTimeFormatter isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        LocalDateTime parsedDateDebut = LocalDateTime.parse(dateDebut, isoFormatter);
+        LocalDateTime parsedDateFin = LocalDateTime.parse(dateFin, isoFormatter);
+
+        // Convert LocalDateTime to LocalDate and add time for start and end of the day
+        LocalDate startDate = parsedDateDebut.toLocalDate();
+        LocalDate endDate = parsedDateFin.toLocalDate();
+
+        LocalDateTime startOfDay = startDate.atStartOfDay();
+        LocalDateTime endOfDay = endDate.atTime(23, 59, 59);
+
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Client> clients = clientService.chercherParDate(startOfDay, endOfDay, pageRequest);
+        List<Client> listClients = clients.getContent();
 
         ClientPdfExporter exporter = new ClientPdfExporter(listClients);
         exporter.export();
-
     }
-    @GetMapping("/download")
-    public ResponseEntity<byte[]> downloadDocument(HttpServletResponse response) throws Exception {
-        // Appeler la méthode exportToPdf pour générer le document PDF
-        exportToPdf(response);
 
-        // Récupérer le fichier PDF généré
+
+    @GetMapping("/clients/download")
+    public ResponseEntity<byte[]> downloadDocument(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "dateDebut") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") String dateDebut,
+            @RequestParam(name = "dateFin") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") String dateFin,
+            HttpServletResponse response) throws Exception {
+
+        // Generate the PDF file using the provided dates
+        exportToPdf(response, page, size, dateDebut, dateFin);
+
+        // Read the generated PDF file
         File pdfFile = new File("facture.pdf");
-
-        // Lire le contenu du fichier PDF
         FileInputStream fileInputStream = new FileInputStream(pdfFile);
         byte[] documentContent = new byte[(int) pdfFile.length()];
         fileInputStream.read(documentContent);
         fileInputStream.close();
 
-        // Définir les en-têtes de la réponse
+        // Define the headers of the response
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDisposition(ContentDisposition.attachment().filename("facture.pdf").build());
 
-        // Retourner la réponse avec le contenu du fichier PDF
+        // Return the response with the content of the PDF file
         return ResponseEntity.ok().headers(headers).body(documentContent);
     }
+
 
     @DeleteMapping("/clients/{_id}")
     public ResponseEntity<String> supprimerClientParId(@PathVariable String _id) {

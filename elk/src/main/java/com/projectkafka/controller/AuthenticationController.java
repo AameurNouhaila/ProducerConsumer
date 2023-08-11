@@ -4,6 +4,9 @@ import com.projectkafka.config.JwtUtils;
 import com.projectkafka.dao.UserDao;
 import com.projectkafka.dto.AuthenticationRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -25,7 +31,7 @@ public class AuthenticationController {
     private final UserDao userDao;
     private final JwtUtils jwtUtils;
     @PostMapping("/authenticate")
-    public ResponseEntity<String> authenticate(@RequestBody AuthenticationRequest request) {
+    public ResponseEntity<Map<String, String>> authenticate(@RequestBody AuthenticationRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -34,13 +40,21 @@ public class AuthenticationController {
 
             final UserDetails user = userDao.findUserByEmail(request.getEmail());
             if (user != null) {
-                return ResponseEntity.ok(jwtUtils.generateToken(user));
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                String token = jwtUtils.generateToken(user);
+
+                Map<String, String> response = new HashMap<>();
+                response.put("token", token);
+
+                return ResponseEntity.ok().headers(headers).body(response);
             }
         } catch (Exception e) {
             // Handle authentication failure here (e.g., wrong credentials)
-            return ResponseEntity.status(401).body("Authentication failed");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return ResponseEntity.status(400).body("Some errors have occurred");
+        return ResponseEntity.badRequest().build();
     }
 }
